@@ -24,14 +24,14 @@ on:
 permissions:
   contents: read
 
-# concurrency:
-#   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref_name || github.ref }}
-#   cancel-in-progress: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref_name || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-tauri:
-    name: Build Tauri (${{ matrix.name }})
-    runs-on: ${{ matrix.os }}
+    name: Build Tauri (${{ matrix.name }}) ${{ github.event.inputs.bundle }}
+    runs-on: if $ {{ github.event.inputs.bundle == 'appimage' }} then 'linux-x86_64-appimage' else matrix.os
     strategy:
       fail-fast: false
       matrix:
@@ -66,12 +66,18 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev \
-            libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev \
-            libappindicator3-dev librsvg2-dev patchelf \
-            libjavascriptcoregtk-4.0-dev libjavascriptcoregtk-4.1-dev \
-            libsoup2.4-dev libsoup-3.0-dev
+          # Dependencies explanation:
+          # - libwebkit2gtk-4.1-dev: WebKit engine for Tauri v2 (4.0 was for v1)
+          # - libappindicator3-dev: System tray support
+          # - librsvg2-dev: SVG rendering
+          # - patchelf: Required for AppImage packaging
+          # - libxdo-dev: Keyboard/mouse automation
+          # - libasound2-dev: Audio support
+          # - libopenblas-dev: GPU acceleration support
+          # - libx11-dev: X11 development files for window system interaction
+          # - libxtst-dev: X11 testing extensions for input simulation
+          # - libxrandr-dev: X11 RandR extension for display configuration
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev libasound2-dev libopenblas-dev libx11-dev libxtst-dev libxrandr-dev
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
