@@ -185,7 +185,7 @@ jobs:
         shell: bash
         run: |
           # Build with bundling (installer/bundle output)
-          npx tauri -t x86_64-unknown-linux-gnu -b appimage
+          npx tauri build -t x86_64-unknown-linux-gnu -b appimage
 
       - name: Collect artifacts (only final installers)
         working-directory: stirling-pdf
