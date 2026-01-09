@@ -119,6 +119,18 @@ jobs:
         with:
           gradle-version: 8.14
 
+      - name: Make libjvm discoverable (appimage only)
+        if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
+        run: |
+          JAVA_LIBJVM="$JAVA_HOME/lib/server/libjvm.so"
+          if [ -f "$JAVA_LIBJVM" ]; then
+            sudo ln -sf "$JAVA_LIBJVM" /usr/lib/libjvm.so
+            echo "Linked libjvm from $JAVA_LIBJVM"
+          else
+            echo "libjvm not found at $JAVA_LIBJVM"
+            exit 1
+          fi
+
       - name: Build Java backend (JAR)
         working-directory: stirling-pdf
         shell: bash
