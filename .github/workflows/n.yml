@@ -193,7 +193,7 @@ jobs:
         env:
           CI: true
         with:
-          projectPath: ./frontend
+          projectPath: ./stirling-pdf/frontend
           tauriScript: npx tauri
           args: -t x86_64-unknown-linux-gnu -b appimage
 
