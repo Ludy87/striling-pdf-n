@@ -191,11 +191,12 @@ jobs:
         if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
         uses: tauri-apps/tauri-action@v0
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
         with:
           projectPath: ./stirling-pdf/frontend
           tauriScript: npx tauri
-          args: -t x86_64-unknown-linux-gnu -b appimage
+          args: -t x86_64-unknown-linux-gnu -b appimage --verbose
 
       - name: Collect artifacts (only final installers)
         working-directory: stirling-pdf
