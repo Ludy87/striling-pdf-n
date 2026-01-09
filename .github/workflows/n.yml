@@ -136,35 +136,78 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
+        if: matrix.os == 'windows-latest'
         working-directory: stirling-pdf/frontend
         shell: bash
         run: |
           # Build with bundling (installer/bundle output)
           npm run tauri-build
 
-      - name: Collect artifacts
+      - name: Build Tauri app
+        if: matrix.os == 'windows-latest'
+        working-directory: stirling-pdf/frontend
+        shell: bash
+        run: |
+          # Build with bundling (installer/bundle output)
+          npm run tauri-build
+
+      - name: Build Tauri app Ubuntu
+        if: matrix.os == 'ubuntu-22.04'
+        working-directory: stirling-pdf/frontend
+        shell: bash
+        run: |
+          # Build with bundling (installer/bundle output)
+          npm run tauri bundle -- --bundles app,dmg,appimage
+
+      - name: Collect artifacts (only final installers)
         working-directory: stirling-pdf
         shell: bash
         run: |
-          mkdir -p ./dist
+          set -euo pipefail
 
-          # Common bundle locations (Tauri v1/v2 can vary slightly)
-          # We'll just pull common outputs by extensions.
+          mkdir -p ./dist
           TARGET_DIR="./frontend/src-tauri/target"
-          echo "Searching in: $TARGET_DIR"
-          ls -la "$TARGET_DIR" || true
+
+          echo "Searching build outputs under: $TARGET_DIR"
+          test -d "$TARGET_DIR" || { echo "ERROR: target dir not found: $TARGET_DIR"; exit 1; }
+
+          # Helper: pick a single file for a pattern (newest if multiple)
+          pick_one () {
+            local pattern="$1"
+            local label="$2"
+
+            # Search recursively, sort by mtime (newest first)
+            local found
+            found=$(find "$TARGET_DIR" -type f -name "$pattern" -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2- || true)
+
+            if [ -z "${found:-}" ]; then
+              echo "ERROR: Could not find $label ($pattern) under $TARGET_DIR"
+              exit 1
+            fi
+
+            echo "✅ Found $label: $found"
+            cp "$found" ./dist/
+          }
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            find "$TARGET_DIR" -type f \( -name "*.msi" -o -name "*.exe" -o -name "*.nsis.zip" \) -print -exec cp {} ./dist/ \; || true
+            # Only MSI
+            pick_one "*.msi" "Windows MSI"
+
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            find "$TARGET_DIR" -type f -name "*.dmg" -print -exec cp {} ./dist/ \; || true
-            find "$TARGET_DIR" -type d -name "*.app" -print -exec cp -R {} ./dist/ \; || true
+            # Only DMG
+            pick_one "*.dmg" "macOS DMG"
+
           else
-            find "$TARGET_DIR" -type f \( -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) -print -exec cp {} ./dist/ \; || true
+            # Linux: DEB, RPM, AppImage
+            pick_one "*.deb" "Linux DEB"
+            pick_one "*.rpm" "Linux RPM"
+
+            # AppImage sometimes is placed under bundle/appimage or similar — still matched by recursive find
+            pick_one "*.AppImage" "Linux AppImage"
           fi
 
-          echo "Collected dist:"
-          ls -la ./dist || true
+          echo "==== dist contents ===="
+          ls -la ./dist
 
       - name: Upload per-platform artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -172,27 +215,27 @@ jobs:
           name: spdf-tauri-${{ matrix.name }}
           path: stirling-pdf/dist/*
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
 
-  package:
-    name: Package (spdf-tauri)
-    runs-on: ubuntu-latest
-    needs: build-tauri
-    steps:
-      - name: Download all platform artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          pattern: spdf-tauri-*
-          path: ./package
-          merge-multiple: false
+  # package:
+  #   name: Package (spdf-tauri)
+  #   runs-on: ubuntu-latest
+  #   needs: build-tauri
+  #   steps:
+  #     - name: Download all platform artifacts
+  #       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+  #       with:
+  #         pattern: spdf-tauri-*
+  #         path: ./package
+  #         merge-multiple: false
 
-      - name: Show package structure
-        run: |
-          ls -R ./package
+  #     - name: Show package structure
+  #       run: |
+  #         ls -R ./package
 
-      - name: Upload combined package artifact (spdf-tauri)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: spdf-tauri
-          path: ./package/**
-          retention-days: 14
+  #     - name: Upload combined package artifact (spdf-tauri)
+  #       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+  #       with:
+  #         name: spdf-tauri
+  #         path: ./package/**
+  #         retention-days: 14
