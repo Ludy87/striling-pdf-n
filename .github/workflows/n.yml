@@ -25,10 +25,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: windows
-            os: windows-latest
-          - name: macos
-            os: macos-latest
+          # - name: windows
+          #   os: windows-latest
+          # - name: macos
+          #   os: macos-latest
           - name: linux
             os: ubuntu-22.04
 
@@ -134,14 +134,6 @@ jobs:
       - name: Install frontend dependencies
         working-directory: stirling-pdf/frontend
         run: npm ci
-
-      - name: Build Tauri app
-        if: matrix.os == 'windows-latest'
-        working-directory: stirling-pdf/frontend
-        shell: bash
-        run: |
-          # Build with bundling (installer/bundle output)
-          npm run tauri-build
 
       - name: Build Tauri app
         if: matrix.os == 'windows-latest'
