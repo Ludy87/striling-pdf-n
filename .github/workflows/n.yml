@@ -163,12 +163,12 @@ jobs:
           npm run tauri-build
 
       - name: Build Tauri app Ubuntu
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
         working-directory: stirling-pdf/frontend
         shell: bash
         run: |
           # Build with bundling (installer/bundle output)
-          npx tauri build --bundles ${{ github.event.inputs.bundle }}
+          npx tauri build --target x86_64-unknown-linux-gnu -b appimage
 
       - name: Collect artifacts (only final installers)
         working-directory: stirling-pdf
