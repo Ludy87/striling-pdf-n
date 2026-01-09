@@ -37,7 +37,7 @@ concurrency:
 jobs:
   build-tauri:
     name: Build Tauri (${{ matrix.name }}) ${{ github.event.inputs.bundle }}
-    runs-on: ${{ github.event.inputs.runner || matrix.os }}
+    runs-on: ${{ github.event.inputs.runner != '' && github.event.inputs.runner || matrix.os }}
     strategy:
       fail-fast: false
       matrix:
