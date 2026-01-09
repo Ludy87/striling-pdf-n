@@ -10,9 +10,16 @@ on:
       platform:
         description: "Platform to build"
         required: true
-        default: "all"
+        default: "linux"
         type: choice
-        options: [all, windows, macos, linux]
+        options: [linux]
+        # options: [all, windows, macos, linux]
+      bundle:
+        description: "Bundle format to build (e.g., deb, rpm, appimage)"
+        required: false
+        default: "appimage"
+        type: choice
+        options: [deb, rpm, appimage]
 
 permissions:
   contents: read
@@ -101,6 +108,8 @@ jobs:
 
           mkdir -p ./frontend/src-tauri/libs
           cp "$JAR" ./frontend/src-tauri/libs/
+        env:
+          DISABLE_ADDITIONAL_FEATURES: true
 
       - name: Create custom JRE via jlink (optional but matches upstream workflow)
         working-directory: stirling-pdf
@@ -153,7 +162,7 @@ jobs:
         shell: bash
         run: |
           # Build with bundling (installer/bundle output)
-          npx tauri build --bundles deb,rpm,appimage
+          npx tauri build --bundles ${{ github.event.inputs.bundle }}
 
       - name: Collect artifacts (only final installers)
         working-directory: stirling-pdf
