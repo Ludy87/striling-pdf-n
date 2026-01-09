@@ -250,8 +250,8 @@ jobs:
 
           else
             # Linux: DEB, RPM, AppImage
-            pick_one "*.deb" "Linux DEB"
-            pick_one "*.rpm" "Linux RPM"
+            # pick_one "*.deb" "Linux DEB"
+            # pick_one "*.rpm" "Linux RPM"
 
             # AppImage sometimes is placed under bundle/appimage or similar — still matched by recursive find
             pick_one "*.AppImage" "Linux AppImage"
