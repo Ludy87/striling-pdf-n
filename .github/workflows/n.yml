@@ -1,0 +1,198 @@
+name: Build Stirling-PDF Tauri (spdf-tauri)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch/Tag/Commit von Stirling-PDF (z.B. main, V2-master, v2.0.0)"
+        required: false
+        default: "main"
+      platform:
+        description: "Platform to build"
+        required: true
+        default: "all"
+        type: choice
+        options: [all, windows, macos, linux]
+
+permissions:
+  contents: read
+
+jobs:
+  build-tauri:
+    name: Build Tauri (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+          - name: macos
+            os: macos-latest
+          - name: linux
+            os: ubuntu-22.04
+
+    steps:
+      - name: Decide if this platform should run
+        shell: bash
+        run: |
+          PLATFORM="${{ github.event.inputs.platform }}"
+          if [ -z "$PLATFORM" ]; then PLATFORM="all"; fi
+          if [ "$PLATFORM" != "all" ] && [ "$PLATFORM" != "${{ matrix.name }}" ]; then
+            echo "Skipping platform ${{ matrix.name }} because input platform=$PLATFORM"
+            exit 0
+          fi
+
+      - name: Checkout Stirling-PDF
+        uses: actions/checkout@v4
+        with:
+          repository: Stirling-Tools/Stirling-PDF
+          ref: ${{ github.event.inputs.ref }}
+          path: stirling-pdf
+
+      # Linux deps for Tauri/WebKit
+      - name: Install dependencies (Linux only)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev \
+            libappindicator3-dev librsvg2-dev patchelf \
+            libjavascriptcoregtk-4.0-dev libjavascriptcoregtk-4.1-dev \
+            libsoup2.4-dev libsoup-3.0-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: stirling-pdf/frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: 8.14
+
+      - name: Build Java backend (JAR)
+        working-directory: stirling-pdf
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build -x test -x sonarqube -x spotlessApply -x spotlessCheck
+
+          JAR=$(ls app/core/build/libs/stirling-pdf-*.jar | head -n 1)
+          echo "Built JAR: $JAR"
+
+          mkdir -p ./frontend/src-tauri/libs
+          cp "$JAR" ./frontend/src-tauri/libs/
+
+      - name: Create custom JRE via jlink (optional but matches upstream workflow)
+        working-directory: stirling-pdf
+        shell: bash
+        run: |
+          JAR=$(ls app/core/build/libs/stirling-pdf-*.jar | head -n 1)
+
+          mkdir -p ./frontend/src-tauri/runtime
+          rm -rf ./frontend/src-tauri/runtime/jre
+
+          if command -v jdeps >/dev/null 2>&1; then
+            DETECTED=$(jdeps --print-module-deps --ignore-missing-deps "$JAR" 2>/dev/null || true)
+          else
+            DETECTED=""
+          fi
+
+          if [ -n "$DETECTED" ]; then
+            MODULES="$DETECTED,java.compiler,java.instrument,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.security.sasl,java.sql,java.transaction.xa,java.xml.crypto,jdk.crypto.ec,jdk.crypto.cryptoki,jdk.unsupported"
+          else
+            MODULES="java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.security.sasl,java.sql,java.transaction.xa,java.xml,java.xml.crypto,jdk.crypto.ec,jdk.crypto.cryptoki,jdk.unsupported"
+          fi
+
+          echo "Using modules: $MODULES"
+
+          jlink \
+            --add-modules "$MODULES" \
+            --strip-debug \
+            --compress=2 \
+            --no-header-files \
+            --no-man-pages \
+            --output ./frontend/src-tauri/runtime/jre
+
+          ./frontend/src-tauri/runtime/jre/bin/java --version
+
+      - name: Install frontend dependencies
+        working-directory: stirling-pdf/frontend
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: stirling-pdf/frontend
+        shell: bash
+        run: |
+          # Build with bundling (installer/bundle output)
+          npm run tauri-build
+
+      - name: Collect artifacts
+        working-directory: stirling-pdf
+        shell: bash
+        run: |
+          mkdir -p ./dist
+
+          # Common bundle locations (Tauri v1/v2 can vary slightly)
+          # We'll just pull common outputs by extensions.
+          TARGET_DIR="./frontend/src-tauri/target"
+          echo "Searching in: $TARGET_DIR"
+          ls -la "$TARGET_DIR" || true
+
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            find "$TARGET_DIR" -type f \( -name "*.msi" -o -name "*.exe" -o -name "*.nsis.zip" \) -print -exec cp {} ./dist/ \; || true
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            find "$TARGET_DIR" -type f -name "*.dmg" -print -exec cp {} ./dist/ \; || true
+            find "$TARGET_DIR" -type d -name "*.app" -print -exec cp -R {} ./dist/ \; || true
+          else
+            find "$TARGET_DIR" -type f \( -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) -print -exec cp {} ./dist/ \; || true
+          fi
+
+          echo "Collected dist:"
+          ls -la ./dist || true
+
+      - name: Upload per-platform artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spdf-tauri-${{ matrix.name }}
+          path: stirling-pdf/dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  package:
+    name: Package (spdf-tauri)
+    runs-on: ubuntu-latest
+    needs: build-tauri
+    steps:
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: spdf-tauri-*
+          path: ./package
+          merge-multiple: false
+
+      - name: Show package structure
+        run: |
+          ls -R ./package
+
+      - name: Upload combined package artifact (spdf-tauri)
+        uses: actions/upload-artifact@v4
+        with:
+          name: spdf-tauri
+          path: ./package/**
+          retention-days: 14
