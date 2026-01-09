@@ -20,12 +20,6 @@ on:
         default: "appimage"
         type: choice
         options: [deb, rpm, appimage]
-      runner:
-        description: "Custom runner label (overrides platform default)"
-        required: true
-        type: choice
-        default: "linux-x86_64-appimage"
-        options: [linux-x86_64-appimage, ubuntu-latest]
 
 permissions:
   contents: read
@@ -37,7 +31,7 @@ concurrency:
 jobs:
   build-tauri:
     name: Build Tauri (${{ matrix.name }}) ${{ github.event.inputs.bundle }}
-    runs-on: ${{ github.event.inputs.runner != '' && github.event.inputs.runner || matrix.os }}
+    runs-on: linux-x86_64-appimage
     strategy:
       fail-fast: false
       matrix:
