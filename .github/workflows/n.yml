@@ -10,7 +10,7 @@ on:
       platform:
         description: "Platform to build"
         required: true
-        default: "linux"
+        default: "ubuntu"
         type: choice
         options: [ubuntu, windows, macos]
       bundle:
@@ -62,7 +62,7 @@ jobs:
 
       # Linux deps for Tauri/WebKit
       - name: Install dependencies (Linux only)
-        if: github.event.inputs.platform == 'linux'
+        if: github.event.inputs.platform == 'ubuntu'
         run: |
           sudo apt-get update
 
@@ -131,7 +131,7 @@ jobs:
           echo "versionNumber=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Make libjvm discoverable (appimage only)
-        if: github.event.inputs.platform == 'linux' && github.event.inputs.bundle == 'appimage'
+        if: github.event.inputs.platform == 'ubuntu' && github.event.inputs.bundle == 'appimage'
         run: |
           JAVA_LIBJVM="$JAVA_HOME/lib/server/libjvm.so"
           if [ -f "$JAVA_LIBJVM" ]; then
@@ -207,7 +207,7 @@ jobs:
         continue-on-error: true
 
       - name: Build Tauri app Linux
-        if: github.event.inputs.platform == 'linux' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
+        if: github.event.inputs.platform == 'ubuntu' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
