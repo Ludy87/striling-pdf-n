@@ -62,7 +62,7 @@ jobs:
 
       # Linux deps for Tauri/WebKit
       - name: Install dependencies (Linux only)
-        if: matrix.os == 'ubuntu-22.04'
+        if: github.event.inputs.platform == 'linux'
         run: |
           sudo apt-get update
 
@@ -119,6 +119,7 @@ jobs:
           gradle-version: 8.14
 
       - name: Get version number
+        working-directory: stirling-pdf
         id: versionNumber
         shell: bash
         run: |
@@ -130,7 +131,7 @@ jobs:
           echo "versionNumber=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Make libjvm discoverable (appimage only)
-        if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
+        if: github.event.inputs.platform == 'linux' && github.event.inputs.bundle == 'appimage'
         run: |
           JAVA_LIBJVM="$JAVA_HOME/lib/server/libjvm.so"
           if [ -f "$JAVA_LIBJVM" ]; then
@@ -193,16 +194,19 @@ jobs:
         working-directory: stirling-pdf/frontend
         run: npm ci
 
-      - name: Build Tauri app
-        if: matrix.os == 'windows-latest'
-        working-directory: stirling-pdf/frontend
-        shell: bash
-        run: |
-          # Build with bundling (installer/bundle output)
-          npm run tauri-build
+      # - name: Build Tauri app
+      #   if: matrix.os == 'windows-latest'
+      #   working-directory: stirling-pdf/frontend
+      #   shell: bash
+      #   run: |
+      #     # Build with bundling (installer/bundle output)
+      #     npm run tauri-build
+
+      - if: github.event.inputs.platform == 'windows'
+        run: sudo apt install nsis
 
       - name: Build Tauri app Windows
-        if: matrix.os == 'windows-latest'
+        if: github.event.inputs.platform == 'windows'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -213,7 +217,7 @@ jobs:
           args: -t x86_64-pc-windows-msvc -b msi
 
       - name: Build Tauri app Linux
-        if: matrix.os == 'ubuntu-22.04' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
+        if: github.event.inputs.platform == 'linux' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -253,11 +257,11 @@ jobs:
             cp "$found" ./dist/
           }
 
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ github.event.inputs.platform }}" = "windows" ]; then
             # Only MSI
             pick_one "*.msi" "Windows MSI"
 
-          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+          elif [ "${{ github.event.inputs.platform }}" = "macos" ]; then
             # Only DMG
             pick_one "*.dmg" "macOS DMG"
 
@@ -280,7 +284,7 @@ jobs:
       - name: Upload per-platform artifact
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
-          name: spdf-tauri-${{ matrix.name }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
+          name: spdf-tauri-${{ github.event.inputs.platform }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
           path: |
               stirling-pdf/dist/*.deb
               stirling-pdf/dist/*.rpm
