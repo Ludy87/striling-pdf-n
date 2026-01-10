@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   build-tauri:
-    name: Build Tauri (${{ matrix.name }}) ${{ github.event.inputs.bundle }} ${{ github.event.inputs.ref }}
+    name: Build Tauri (${{ github.event.inputs.platform }}) ${{ github.event.inputs.bundle }} ${{ github.event.inputs.ref }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
