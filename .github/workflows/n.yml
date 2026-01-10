@@ -12,10 +12,9 @@ on:
         required: true
         default: "linux"
         type: choice
-        options: [linux]
-        # options: [all, windows, macos, linux]
+        options: [linux, windows, macos]
       bundle:
-        description: "Bundle format to build (e.g., deb, rpm, appimage)"
+        description: "Bundle format to build (e.g., deb, rpm, appimage) for Linux"
         required: true
         default: "appimage"
         type: choice
@@ -119,6 +118,15 @@ jobs:
         with:
           gradle-version: 8.14
 
+      - name: Get version number
+        id: versionNumber
+        run: |
+          echo "Running gradlew printVersion..."
+          ./gradlew printVersion --quiet
+          VERSION=$(./gradlew printVersion --quiet | tail -1)
+          echo "Extracted version: $VERSION"
+          echo "versionNumber=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Make libjvm discoverable (appimage only)
         if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
         run: |
@@ -191,16 +199,8 @@ jobs:
           # Build with bundling (installer/bundle output)
           npm run tauri-build
 
-      # - name: Build Tauri app Ubuntu
-      #   if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
-      #   working-directory: stirling-pdf/frontend
-      #   shell: bash
-      #   run: |
-      #     # Build with bundling (installer/bundle output)
-      #     npx tauri build -t x86_64-unknown-linux-gnu -b appimage
-
-      - name: Build Tauri app
-        if: matrix.os == 'ubuntu-22.04' && github.event.inputs.bundle == 'appimage'
+      - name: Build Tauri app Windows
+        if: matrix.os == 'windows-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -208,7 +208,18 @@ jobs:
         with:
           projectPath: ./stirling-pdf/frontend
           tauriScript: npx tauri
-          args: -t x86_64-unknown-linux-gnu -b appimage --verbose
+          args: -t x86_64-pc-windows-msvc -b msi
+
+      - name: Build Tauri app Linux
+        if: matrix.os == 'ubuntu-22.04' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        with:
+          projectPath: ./stirling-pdf/frontend
+          tauriScript: npx tauri
+          args: -t x86_64-unknown-linux-gnu -b ${{ github.event.inputs.bundle }}
 
       - name: Collect artifacts (only final installers)
         working-directory: stirling-pdf
@@ -250,22 +261,31 @@ jobs:
 
           else
             # Linux: DEB, RPM, AppImage
-            # pick_one "*.deb" "Linux DEB"
-            # pick_one "*.rpm" "Linux RPM"
-
-            # AppImage sometimes is placed under bundle/appimage or similar — still matched by recursive find
-            pick_one "*.AppImage" "Linux AppImage"
+            if [ "${{ github.event.inputs.bundle }}" = "deb" ]; then
+              pick_one "*.deb" "Linux DEB"
+            fi
+            if [ "${{ github.event.inputs.bundle }}" = "rpm" ]; then
+              pick_one "*.rpm" "Linux RPM"
+            fi
+            if [ "${{ github.event.inputs.bundle }}" = "appimage" ]; then
+              pick_one "*.AppImage" "Linux AppImage"
+            fi
           fi
 
           echo "==== dist contents ===="
           ls -la ./dist
 
       - name: Upload per-platform artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
-          name: spdf-tauri-${{ matrix.name }}
-          path: stirling-pdf/dist/*
-          if-no-files-found: error
+          name: spdf-tauri-${{ matrix.name }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
+          path: |
+              stirling-pdf/dist/*.deb
+              stirling-pdf/dist/*.rpm
+              stirling-pdf/dist/*.AppImage
+              stirling-pdf/dist/*.msi
+              stirling-pdf/dist/*.dmg
+          if-no-files-found: warn
           retention-days: 1
 
   # package:
