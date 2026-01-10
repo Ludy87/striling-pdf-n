@@ -16,9 +16,9 @@ on:
       bundle:
         description: "Bundle format to build (e.g., deb, rpm, appimage) for Linux"
         required: true
-        default: "appimage"
+        default: "-"
         type: choice
-        options: [deb, rpm, appimage]
+        options: [deb, rpm, appimage, "-"]
 
 permissions:
   contents: read
