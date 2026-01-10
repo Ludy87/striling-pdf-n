@@ -10,9 +10,9 @@ on:
       platform:
         description: "Platform to build"
         required: true
-        default: "ubuntu"
+        default: "ubuntu-22.04"
         type: choice
-        options: [ubuntu, windows, macos]
+        options: [ubuntu-22.04, windows-latest, macos-latest]
       bundle:
         description: "Bundle format to build (e.g., deb, rpm, appimage) for Linux"
         required: true
@@ -40,7 +40,7 @@ jobs:
           # - name: macos
           #   os: macos-latest
           - name: linux
-            os: ${{ github.event.inputs.platform }}-latest
+            os: ${{ github.event.inputs.platform }}
 
     steps:
       - name: Decide if this platform should run
