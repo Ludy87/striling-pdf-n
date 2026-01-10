@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref_name || github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.platform }}-${{ inputs.bundle }}-${{ inputs.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -193,17 +193,6 @@ jobs:
       - name: Install frontend dependencies
         working-directory: stirling-pdf/frontend
         run: npm ci
-
-      # - name: Build Tauri app
-      #   if: matrix.os == 'windows-latest'
-      #   working-directory: stirling-pdf/frontend
-      #   shell: bash
-      #   run: |
-      #     # Build with bundling (installer/bundle output)
-      #     npm run tauri-build
-
-      # - if: github.event.inputs.platform == 'windows'
-      #   run: sudo apt install nsis lld llvm
 
       - name: Build Tauri app Windows
         if: github.event.inputs.platform == 'windows'
