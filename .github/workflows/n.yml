@@ -274,13 +274,8 @@ jobs:
       - name: Upload per-platform artifact
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
-          # name: spdf-tauri-${{ github.event.inputs.platform }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
-          path: |
-              stirling-pdf/dist/*.deb
-              stirling-pdf/dist/*.rpm
-              stirling-pdf/dist/*.AppImage
-              stirling-pdf/dist/*.msi
-              stirling-pdf/dist/*.dmg
+          name: spdf-tauri-${{ github.event.inputs.platform }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
+          path: stirling-pdf/dist/*
           if-no-files-found: warn
           retention-days: 1
 
