@@ -215,6 +215,31 @@ jobs:
           projectPath: ./stirling-pdf/frontend
           tauriScript: npx tauri
           args: -t x86_64-pc-windows-msvc -b msi
+        continue-on-error: true
+
+      - name: Build Tauri app Windows
+        if: github.event.inputs.platform == 'windows'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        with:
+          projectPath: ./stirling-pdf/frontend
+          tauriScript: npx tauri
+          args: -t x86_64-pc-windows-msvc
+        continue-on-error: true
+
+      - name: Build Tauri app windows (ignore)
+        if: github.event.inputs.platform == 'windows'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        with:
+          projectPath: ./stirling-pdf/frontend
+          tauriScript: npx tauri
+          args: -t msi
+        continue-on-error: true
 
       - name: Build Tauri app Linux
         if: github.event.inputs.platform == 'linux' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
