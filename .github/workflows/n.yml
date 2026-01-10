@@ -203,31 +203,7 @@ jobs:
         with:
           projectPath: ./stirling-pdf/frontend
           tauriScript: npx tauri
-          args: -t x86_64-pc-windows-msvc -b msi
-        continue-on-error: true
-
-      - name: Build Tauri app Windows
-        if: github.event.inputs.platform == 'windows'
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: true
-        with:
-          projectPath: ./stirling-pdf/frontend
-          tauriScript: npx tauri
           args: -t x86_64-pc-windows-msvc
-        continue-on-error: true
-
-      - name: Build Tauri app windows (ignore)
-        if: github.event.inputs.platform == 'windows'
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: true
-        with:
-          projectPath: ./stirling-pdf/frontend
-          tauriScript: npx tauri
-          args: -t msi
         continue-on-error: true
 
       - name: Build Tauri app Linux
@@ -298,7 +274,7 @@ jobs:
       - name: Upload per-platform artifact
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
-          name: spdf-tauri-${{ github.event.inputs.platform }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
+          # name: spdf-tauri-${{ github.event.inputs.platform }}-${{ steps.versionNumber.outputs.versionNumber }}-${{ github.event.inputs.ref }}
           path: |
               stirling-pdf/dist/*.deb
               stirling-pdf/dist/*.rpm
