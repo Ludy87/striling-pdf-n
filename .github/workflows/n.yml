@@ -30,17 +30,17 @@ concurrency:
 jobs:
   build-tauri:
     name: Build Tauri (${{ github.event.inputs.platform }}) ${{ github.event.inputs.bundle }} ${{ github.event.inputs.ref }}
-    runs-on: if ${{ github.event.inputs.platform == 'windows' }} then 'windows-latest' elif ${{ github.event.inputs.platform == 'macos' }} then 'macos-latest' else 'ubuntu-22.04' fi
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: windows
-            os: windows-latest
+          # - name: windows
+          #   os: windows-latest
           # - name: macos
           #   os: macos-latest
           - name: linux
-            os: ubuntu-22.04
+            os: ${{ github.event.inputs.platform }}-latest
 
     steps:
       - name: Decide if this platform should run
