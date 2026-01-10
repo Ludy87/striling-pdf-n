@@ -5,8 +5,13 @@ on:
     inputs:
       repository:
         description: "Repository to build from"
-        required: false
+        required: true
+        type: choice
         default: "Stirling-Tools/Stirling-PDF"
+        options: [
+          Stirling-Tools/Stirling-PDF,
+          balazs-szucs/Stirling-PDF
+        ]
       ref:
         description: "Branch/Tag/Commit von Stirling-PDF (z.B. main, V2-master, v2.0.0)"
         required: false
