@@ -1,5 +1,5 @@
 name: Build Stirling-PDF Tauri (spdf-tauri)
-
+run-name: "Tauri: ${{ inputs.platform }} | ref=${{ inputs.ref }} | bundle=${{ inputs.bundle }}"
 on:
   workflow_dispatch:
     inputs:
