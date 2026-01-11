@@ -212,7 +212,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app Windows
-        if: github.event.inputs.platform == 'windows'
+        if: github.event.inputs.platform == 'windows-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -285,11 +285,11 @@ jobs:
             cp "$found" ./dist/
           }
 
-          if [ "${{ github.event.inputs.platform }}" = "windows" ]; then
+          if [ "${{ github.event.inputs.platform }}" = "windows-latest" ]; then
             # Only MSI
             pick_one "*.msi" "Windows MSI"
 
-          elif [ "${{ github.event.inputs.platform }}" = "macos" ]; then
+          elif [ "${{ github.event.inputs.platform }}" = "macos-15" ] || [ "${{ github.event.inputs.platform }}" = "macos-15-intel" ]; then
             # Only DMG
             pick_one "*.dmg" "macOS DMG"
 
