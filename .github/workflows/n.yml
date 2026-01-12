@@ -296,9 +296,13 @@ jobs:
             cp "$found" ./dist/
           }
 
-          if [ "${{ github.event.inputs.platform }}" = "windows-latest" ]; then
+          if [ "${{ github.event.inputs.platform }}" = "windows-latest" ] && [ "${{ github.event.inputs.bundle }}" = "-" ]; then
             # Only MSI
             pick_one "*.msi" "Windows MSI"
+
+          if [ "${{ github.event.inputs.platform }}" = "windows-latest" ] && [ "${{ github.event.inputs.bundle }}" = "client" ]; then
+            # Only exe
+            pick_one "*.exe" "Windows EXE"
 
           elif [ "${{ github.event.inputs.platform }}" = "macos-15" ] || [ "${{ github.event.inputs.platform }}" = "macos-15-intel" ]; then
             # Only DMG
