@@ -32,7 +32,7 @@ on:
         required: true
         default: "-"
         type: choice
-        options: [deb, rpm, appimage, "-"]
+        options: [deb, rpm, appimage, "-", client]
 
 permissions:
   contents: read
@@ -212,7 +212,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app Windows
-        if: github.event.inputs.platform == 'windows-latest'
+        if: github.event.inputs.platform == 'windows-latest' && github.event.inputs.bundle != 'client'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -221,6 +221,17 @@ jobs:
           projectPath: ./stirling-pdf/frontend
           tauriScript: npx tauri
           args: -t x86_64-pc-windows-msvc
+
+      - name: Build Tauri app Windows
+        if: github.event.inputs.platform == 'windows-latest' && github.event.inputs.bundle == 'client'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        with:
+          projectPath: ./stirling-pdf/frontend
+          tauriScript: npx tauri
+          args: --bundles nsis
 
       - name: Build Tauri app Linux
         if: github.event.inputs.platform == 'ubuntu-22.04' && ( github.event.inputs.bundle == 'deb' || github.event.inputs.bundle == 'rpm' || github.event.inputs.bundle == 'appimage' )
