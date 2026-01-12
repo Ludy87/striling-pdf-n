@@ -267,6 +267,15 @@ jobs:
           args: -t x86_64-apple-darwin
 
       - name: Collect artifacts (only final installers)
+        if: ${{ github.event.inputs.bundle == 'client' }}
+        working-directory: stirling-pdf
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -la ./frontend/src-tauri/target/release/
+
+      - name: Collect artifacts (only final installers)
+        if: ${{ github.event.inputs.bundle != 'client' }}
         working-directory: stirling-pdf
         shell: bash
         run: |
@@ -300,10 +309,10 @@ jobs:
             # Only MSI
             pick_one "*.msi" "Windows MSI"
 
-          if [ "${{ github.event.inputs.platform }}" = "windows-latest" ] && [ "${{ github.event.inputs.bundle }}" = "client" ]; then
+          elif [ "${{ github.event.inputs.platform }}" = "windows-latest" ] && [ "${{ github.event.inputs.bundle }}" = "client" ]; then
             ls -la "$TARGET_DIR/release/"
             # Only exe
-            cp "$TARGET_DIR/release/bundle/nsis/stirling-pdf"*".exe" ./dist/
+            cp "$TARGET_DIR/release/stirling-pdf"*".exe" ./dist/
 
           elif [ "${{ github.event.inputs.platform }}" = "macos-15" ] || [ "${{ github.event.inputs.platform }}" = "macos-15-intel" ]; then
             # Only DMG
