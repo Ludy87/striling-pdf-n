@@ -272,6 +272,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p ./dist
           ls -la ./frontend/src-tauri/target/release/
           cp ./frontend/src-tauri/target/release/stirling-pdf.exe ./dist/
 
