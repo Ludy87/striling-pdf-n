@@ -301,8 +301,9 @@ jobs:
             pick_one "*.msi" "Windows MSI"
 
           if [ "${{ github.event.inputs.platform }}" = "windows-latest" ] && [ "${{ github.event.inputs.bundle }}" = "client" ]; then
+            ls -la "$TARGET_DIR/release/"
             # Only exe
-            pick_one "*.exe" "Windows EXE"
+            cp "$TARGET_DIR/release/bundle/nsis/stirling-pdf"*".exe" ./dist/
 
           elif [ "${{ github.event.inputs.platform }}" = "macos-15" ] || [ "${{ github.event.inputs.platform }}" = "macos-15-intel" ]; then
             # Only DMG
