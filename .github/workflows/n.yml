@@ -273,6 +273,7 @@ jobs:
         run: |
           set -euo pipefail
           ls -la ./frontend/src-tauri/target/release/
+          cp ./frontend/src-tauri/target/release/stirling-pdf.exe ./dist/
 
       - name: Collect artifacts (only final installers)
         if: ${{ github.event.inputs.bundle != 'client' }}
